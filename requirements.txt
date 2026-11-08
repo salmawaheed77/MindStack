@@ -1,1 +1,4 @@
 psutil
+openai-whisper
+sounddevice
+soundfile
