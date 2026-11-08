@@ -40,3 +40,6 @@ Voice text is never executed directly as a shell command. It is first converted 
 
 ## Team Workflow
 Read `docs/GIT_WORKFLOW.md` before making any commit.
+
+## Speech-to-Text (stt)
+Requires ffmpeg. Download it, extract it, and place the folder at `stt/ffmpeg/` so that `stt/ffmpeg/bin/ffmpeg.exe` exists.
