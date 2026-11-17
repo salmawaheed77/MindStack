@@ -2,8 +2,13 @@ import os
 import warnings
 
 # Tell Python where the project's ffmpeg is (so no one needs to edit PATH)
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-os.environ["PATH"] += os.pathsep + os.path.join(BASE_DIR, "ffmpeg", "bin")
+import shutil
+
+if shutil.which("ffmpeg") is None:
+    raise RuntimeError(
+        "FFmpeg is not installed. Install it using: "
+        "sudo apt install ffmpeg"
+    )
 
 import whisper
 
@@ -13,12 +18,13 @@ warnings.filterwarnings("ignore", message="FP16 is not supported on CPU")
 _model = None  # the model is loaded once, then reused
 
 
+_models = {}
+
 def _get_model(model_name="base"):
-    """Load the Whisper model the first time, then reuse it."""
-    global _model
-    if _model is None:
-        _model = whisper.load_model(model_name)
-    return _model
+    if model_name not in _models:
+        _models[model_name] = whisper.load_model(model_name)
+
+    return _models[model_name]
 
 
 def transcribe_audio(audio_path):
