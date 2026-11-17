@@ -67,12 +67,22 @@ def create_folder(name):
 def rename_file(old_name, new_name):
     src = _safe_path(old_name)
     dst = _safe_path(new_name)
+
     if not src.exists():
         return _result(False, "File not found")
+
+    if not src.is_file():
+        return _result(False, "Source must be a file")
+
     if dst.exists():
-        return _result(False, "A file with the new name already exists")
+        return _result(False, "Destination already exists")
+
     src.rename(dst)
-    return _result(True, f"Renamed {old_name} to {new_name}")
+
+    return _result(
+        True,
+        f"Renamed {old_name} to {new_name}"
+    )
 
 
 @_guard
