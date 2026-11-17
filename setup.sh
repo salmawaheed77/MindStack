@@ -5,7 +5,7 @@ cd "$(dirname "$0")"
 
 echo "Installing system packages..."
 sudo apt update
-sudo apt install -y python3 python3-pip python3-venv git alsa-utils pulseaudio-utils build-essential
+sudo apt install -y python3 python3-pip python3-venv \ git alsa-utils pulseaudio-utils build-essential ffmpeg
 
 echo "Creating virtual environment..."
 python3 -m venv venv
