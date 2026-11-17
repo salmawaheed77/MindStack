@@ -52,12 +52,17 @@ def close_app(name):
     process_names = ALLOWED_APPS[name][1]
     closed = 0
     for p in psutil.process_iter(["name"]):
+    try:
         if p.info["name"] in process_names:
-            try:
-                p.terminate()
-                closed += 1
-            except (psutil.NoSuchProcess, psutil.AccessDenied):
-                pass
+            p.terminate()
+            closed += 1
+
+    except (
+        psutil.NoSuchProcess,
+        psutil.AccessDenied,
+        psutil.ZombieProcess
+    ):
+        continue
     if closed == 0:
         return _result(False, f"{name} is not running")
     return _result(True, f"Closed {name}")
