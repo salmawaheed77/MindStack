@@ -138,10 +138,7 @@ class Controller(QObject):
         self.backend.process(text)
 
     def _on_needs_confirmation(self, text: str) -> None:
-        if self.settings.get("confirm_dangerous"):
-            self.confirmation_requested.emit(text)
-        else:
-            self.backend.confirm(True)
+        self.confirmation_requested.emit(text)
 
     def _on_executed(self, message: str, success: bool) -> None:
         rec = CommandRecord(datetime.now(), self._current_text, message, success)
