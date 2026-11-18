@@ -28,21 +28,12 @@ def open_app(name):
     command = ALLOWED_APPS[name][0]
     if shutil.which(command) is None:
         return _result(False, f"{name} is not installed")
-   try:
-    subprocess.Popen(
-        [command],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        start_new_session=True,
-    )
-
-    return _result(True, f"Opened {name}")
-
-except OSError as e:
-    return _result(
-        False,
-        f"Failed to open {name}: {e}"
-    )
+    try:
+        subprocess.Popen([command], stdout=subprocess.DEVNULL,
+                         stderr=subprocess.DEVNULL, start_new_session=True)
+        return _result(True, f"Opened {name}")
+    except OSError as e:
+        return _result(False, f"Failed to open {name}: {e}")
 
 
 def close_app(name):
