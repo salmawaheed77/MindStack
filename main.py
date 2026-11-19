@@ -155,7 +155,9 @@ class Pipeline:
         if result.get("error") == "confirmation_required":
             if self.confirm(self.describe(action)):
                 # Repeat the exact same action, now confirmed by the user.
-                result = self.execute({**action, "confirmed": True})
+                # Approval must be passed as the keyword argument: the executor
+                # deletes any "confirmed" key found inside the action dict.
+                result = self.execute(action, confirmed=True)
             else:
                 self.say("Command cancelled.")
                 return {"success": False, "error": "cancelled", "message": "Command cancelled."}
@@ -328,3 +330,4 @@ def main(argv=None) -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
+
