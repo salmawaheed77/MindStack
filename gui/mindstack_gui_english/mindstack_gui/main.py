@@ -8,7 +8,7 @@ import sys
 from PySide6.QtWidgets import QApplication
 
 from app import APP_NAME
-from app.backend import MockBackend
+from app.real_backend import RealBackend
 from app.controller import Controller
 from app.icons import make_app_icon
 from app.main_window import MainWindow
