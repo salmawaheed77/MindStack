@@ -4,6 +4,7 @@ Every slow job runs in a background thread and reports back with signals,
 so the window never freezes.
 """
 
+import inspect
 import sys
 import threading
 from pathlib import Path
@@ -28,17 +29,33 @@ def describe(action: dict) -> str:
 
 def speakable(result: dict) -> str:
     """Short text that is nice to hear (message + first items of the data)."""
-    msg = result.get("message", "")
+    msg = str(result.get("message", "")).strip()
     data = result.get("data")
     if isinstance(data, list) and data:
         names = [d.get("name", str(d)) if isinstance(d, dict) else str(d)
                  for d in data[:3]]
-        msg += " First items: " + ", ".join(names)
+        msg += " First items: " + ", ".join(names) + "."
     elif isinstance(data, dict) and "used_percent" in data:
         msg += f" {data['used_percent']} percent."
     elif isinstance(data, str) and len(data) < 60:
         msg += " " + data
-    return msg
+    return msg or ("Done." if result.get("success") else "Something went wrong.")
+
+
+def _call_supported(fn, *args, **kwargs):
+    """Call fn with only the keyword arguments its signature accepts.
+
+    The stt and tts modules are owned by other people and may not support
+    every option the GUI offers (device, language, speech rate). Unsupported
+    options are skipped instead of crashing the call.
+    """
+    try:
+        params = inspect.signature(fn).parameters
+    except (TypeError, ValueError):
+        return fn(*args)
+    if any(p.kind is inspect.Parameter.VAR_KEYWORD for p in params.values()):
+        return fn(*args, **kwargs)
+    return fn(*args, **{k: v for k, v in kwargs.items() if k in params})
 
 
 class RealBackend(BaseBackend):
@@ -47,6 +64,7 @@ class RealBackend(BaseBackend):
         self._pending = None        # action waiting for the user's yes/no
         self._listening = False
         self._stream = None         # microphone test stream
+        self._speak_lock = threading.Lock()   # one spoken answer at a time
 
     @staticmethod
     def _in_thread(fn, *args):
@@ -63,16 +81,19 @@ class RealBackend(BaseBackend):
         was_listening, self._listening = self._listening, False
         if was_listening:
             try:
-                from stt.speech_to_text import cancel
-                cancel()
+                from stt import speech_to_text
+                cancel = getattr(speech_to_text, "cancel", None)
+                if callable(cancel):    # optional: stt may not support it yet
+                    cancel()
             except Exception:
                 pass
 
     def _listen_worker(self, language, mic_device):
         try:
             from stt.speech_to_text import listen_and_transcribe
-            text = listen_and_transcribe(
-                seconds=5, device=mic_device or None, language=language or None)
+            text = _call_supported(
+                listen_and_transcribe, seconds=5,
+                device=mic_device or None, language=language or None)
         except Exception as exc:
             self._listening = False
             self.error.emit(f"Microphone / speech error: {exc}")
@@ -94,7 +115,7 @@ class RealBackend(BaseBackend):
             from executor.executor import execute_command
             from nlp.intent import understand
             action = understand(text)                    # Fire -> JSON action
-            if action.get("action") == "unknown":
+            if not isinstance(action, dict) or action.get("action") in (None, "", "unknown"):
                 self.executed.emit("Sorry, I did not understand that command", False)
                 return
             result = execute_command(action)
@@ -129,7 +150,9 @@ class RealBackend(BaseBackend):
     def _speak_worker(self, text, rate):
         try:
             from tts.tts import speak
-            speak(text, rate)
+            with self._speak_lock:
+                if _call_supported(speak, text, rate=rate) is False:
+                    print("TTS reported a failure.")
         except Exception as exc:
             print(f"TTS error: {exc}")
         finally:
@@ -163,3 +186,4 @@ class RealBackend(BaseBackend):
     def shutdown(self):
         self._listening = False
         self.stop_mic_test()
+
