@@ -1,45 +1,67 @@
-# MindStack: Voice-Enhanced Linux
+MindStack — Sound Operating System
+MindStack is a voice-controlled system for Ubuntu/Linux. It receives a user's spoken request, converts it into a structured action, validates that action, executes supported operations through the Executor, and can return the result through Text-to-Speech.
 
-A voice interaction layer on top of Linux (Ubuntu). The user speaks a command, the system runs an allowed operation, and replies by voice.
-The project runs on top of the Linux kernel without modifying it, and interacts with the shell and system APIs safely.
+The project uses the existing Linux operating system. It does not replace or modify the Linux kernel.
+Architecture
+User
+  ↓
+Microphone
+  ↓
+Speech-to-Text (STT)
+  ↓
+Command understanding
+  ↓
+Structured action
+  ↓
+Executor (validation + operation handling)
+  ↓
+Execution result
+  ↓
+Text-to-Speech (TTS)
+  ↓
+User
 
-## Architecture
-User -> Microphone -> Speech-to-Text -> Command Understanding -> Command Validation -> Linux Operation -> Result -> Text-to-Speech -> User
+GUI ↔ Backend / Controller ↔ Project components
+Important design decision: All supported computer and Linux operations are handled inside executor/. There is no separate linux_ops/ module in this project.
+Main project folders
+Path	Responsibility
+stt/	Speech-to-Text input
+tts/	Text-to-Speech responses
+executor/	Validates structured actions and performs file, application, browser, system, and device operations
+security/	Separate security-related command validation components; coordinate their use with the Executor interface
+gui/	PySide6 graphical interface
+tests/	Automated tests
+docs/	Setup, architecture, and team workflow documentation
+main.py	Project-level entry point
 
-## Project Structure
-| Folder | Owner | Responsibility |
-|---|---|---|
-| `stt/` | Dareen Hossam | Microphone input and speech-to-text |
-| `nlp/` | Jody Rafik | Converting text into a known intent |
-| `security/` | Rahma Saeed | Allowed-command list, delete confirmation, command validation |
-| `executor/` | Shimaa Mamdouh | Running commands and handling errors |
-| `tts/` | Rahma Yasser | Voice responses |
-| `linux_ops/` | Salma Waheed | Files, applications, processes, and system resources |
-| `gui/` | Habiba Ayman (Team leader) | User interface |
-| `tests/` | Rana Said | Test cases |
-| `docs/` | Everyone | Documentation and team rules |
-| `main.py` | Rana Said | Main entry point |
 
-## Installation
-```bash
+The command-understanding component may be developed or run separately. The Executor expects a structured action dictionary; it does not accept arbitrary shell text as an instruction.
+Installation
+Use Ubuntu 22.04 or newer.
 git clone https://github.com/salmawaheed77/MindStack.git
 cd MindStack
 git checkout develop
-python3 -m venv venv
+bash setup.sh
 source venv/bin/activate
-pip install -r requirements.txt
-```
-
-## Usage
-```bash
+See [`docs/SETUP.md`](docs/SETUP.md) for detailed setup instructions and optional Ubuntu packages.
+Running
+From the project root, activate the virtual environment first.
 python3 main.py
-```
+To run the Executor's command-line interface:
+python3 -m executor.main
+To run the GUI, follow the instructions in
+[`gui/mindstack_gui_english/mindstack_gui/README.md`](gui/mindstack_gui_english/mindstack_gui/README.md).
+Executor safety
+The Executor accepts structured actions such as:
+{"action": "get_cpu_usage"}
+It does not execute arbitrary shell commands from voice text. File operations are restricted to the ~/MindStack_Workspace directory. Destructive and system-critical actions require explicit confirmation through the Executor's confirmation argument.
 
-## Security Rule
-Voice text is never executed directly as a shell command. It is first converted into a known intent, then validated, and only allowed operations are executed. Dangerous operations such as deleting files require user confirmation.
-
-## Team Workflow
-Read `docs/GIT_WORKFLOW.md` before making any commit.
-
+Read [`executor/README.md`](executor/README.md) for the supported action list, safety rules, and tests.
+Tests
+Run the Executor tests from the project root:
+python3 -m unittest executor.test_executor -v
+Other tests should be run only when their required modules and hardware dependencies are available. See the relevant test file before running it.
+Team workflow
+Read [`docs/GIT_WORKFLOW.md`](docs/GIT_WORKFLOW.md) before creating branches or submitting changes.
 ## Speech-to-Text (stt)
 Requires ffmpeg. Download it, extract it, and place the folder at `stt/ffmpeg/` so that `stt/ffmpeg/bin/ffmpeg.exe` exists.
