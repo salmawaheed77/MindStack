@@ -1,116 +1,78 @@
-# MindStack — Executor Module (updated)
+MindStack — Executor
+The Executor is the project's central layer for Linux and computer operations. All supported operations are implemented in this directory; there is no separate linux_ops/ module.
 
-This folder is the structured command-execution layer for MindStack. It does **not** contain STT, NLP, GUI code, or a general-purpose shell.
-
-## What changed in this version
-
-- Fixed package imports: use `executor.executor`, not the old/nonexistent `command_executor` package.
-- Kept a single public entry point: `execute_command(payload)`.
-- Added `get_cpu_usage` and `get_processes` actions to match the GUI command catalogue.
-- Tightened workspace path checks and reject symbolic links in user-supplied paths.
-- Prevented accidental overwrites in create, copy, move, and rename operations.
-- Fixed nested-folder rename path handling.
-- Made confirmation failures explicit with `error="confirmation_required"` and `confirmation_required=true`.
-- Added clearer error codes and tests.
-- Kept application launching allowlisted and all subprocess calls shell-free.
-
-## Latest changes
-
-- `get_processes` now returns the top 10 processes by memory use (`memory_percent`). Optional fields: `limit` (1-100) and `sort_by` (`memory` or `pid`).
-- `text_editor` uses `gedit` if installed, otherwise `gnome-text-editor`. `gnome_text_editor` is also an allowed name.
-- The workspace folder `~/MindStack_Workspace` is created with owner-only permissions (700).
-
-- `terminal` and `code` are no longer allowed applications (they give a shell). Process names are compared with the kernel's 15-character limit, so `close_application` now works for `gnome-calculator` and `gnome-text-editor`.
-- `folder: ""` or `null` in `list_files` / `search_files` means the workspace root.
-
-- **Security fix:** approval can no longer be sent inside the payload; use `execute_command(action, confirmed=True)`.
-- Error messages are short and speakable (no `[Errno ...]`, no full paths). `lock_screen`, `logout`, `restart_system` and `shutdown_system` now report failures instead of always saying "requested". Launched applications no longer print to the terminal. `list_running_applications` returns full process names. Each executed action is logged by the `mindstack.executor` logger.
-
-## Requirements
-
+It accepts structured action dictionaries, validates them, runs the corresponding operation, and returns a result. It is not a general-purpose shell and should not receive arbitrary shell strings.
+Main files
+- executor.py: action dispatcher and public execute_command(...) interface.
+- file_manager.py: workspace file and folder operations.
+- app_manager.py: allowlisted application operations.
+- browser_manager.py: website opening and search.
+- system_manager.py: system information, process, session, and system operations.
+- device_manager.py: volume, brightness, and Wi-Fi operations.
+- security.py: Executor-side safety checks.
+- main.py: optional JSON-line CLI.
+- test_executor.py: automated tests.
+Requirements
 - Python 3.10+
-- Ubuntu/Linux for `/proc`-based CPU, memory, and process information
-- Optional OS utilities depending on the action: `ps`, `pkill`, `loginctl`, `systemctl`, `nmcli`, `wpctl` or `pactl`, `brightnessctl`, and installed desktop applications.
-
-Example Ubuntu packages:
-
-```bash
+- Ubuntu/Linux for Linux-specific system and process information.
+- Optional system utilities depending on the operation: ps, pkill, loginctl, systemctl, nmcli, wpctl or pactl, and brightnessctl.
+- The relevant desktop applications must be installed for application-launching actions.
+Common packages:
 sudo apt update
 sudo apt install procps util-linux network-manager
-# Optional brightness control:
+Optional brightness utility:
 sudo apt install brightnessctl
-```
+Workspace and file safety
+File operations are restricted to ~/MindStack_Workspace. The Executor creates this workspace with owner-only permissions where supported.
 
-Audio controls use `wpctl` (PipeWire) or `pactl` (PulseAudio), if available.
+Example payloads:
+{"action": "create_folder", "path": "College"}
+{"action": "create_file", "path": "College/notes.txt", "content": "My notes"}
+{"action": "read_file", "path": "College/notes.txt"}
+Use paths relative to the workspace. The Executor rejects paths that escape the workspace and rejects symbolic-link components. It protects existing destinations from accidental overwrite.
+Confirmation
+Deleting files/folders and logging out, restarting, or shutting down require explicit user approval.
+from executor.executor import execute_command
 
-## Workspace and file safety
+result = execute_command({
+    "action": "delete_file",
+    "path": "College/notes.txt"
+})
 
-All file operations are restricted to `~/MindStack_Workspace`. Relative paths are recommended:
+if result.get("confirmation_required"):
+    # Ask the user to approve this exact action.
+    result = execute_command(
+        {"action": "delete_file", "path": "College/notes.txt"},
+        confirmed=True
+    )
+Only pass confirmed=True after the user has approved the exact action. Do not allow the command-understanding component to approve its own action.
+Supported actions
+Category	Actions
+Applications	open_application, close_application, list_running_applications
+Files	create_folder, create_file, read_file, copy_file, move_file, rename_file, delete_file, delete_folder, search_files, list_files
+Browser	open_website, google_search
+System	get_date_time, get_cpu_usage, get_disk_usage, get_memory_usage, get_processes, get_system_info, lock_screen, logout, restart_system, shutdown_system
+Devices	volume_up, volume_down, volume_mute, brightness_up, brightness_down, wifi_on, wifi_off
 
-```json
-{"action":"create_folder","path":"College"}
-{"action":"create_file","path":"College/notes.txt","content":"My notes"}
-{"action":"read_file","path":"College/notes.txt"}
-```
 
-The executor rejects paths that escape the workspace and rejects symbolic-link components. It does not overwrite an existing destination. Choose a new destination name instead.
-
-Deleting files/folders and logging out, restarting, or shutting down require explicit approval from the user.
-
-```python
-result = execute_command({"action": "delete_file", "path": "College/notes.txt"})
-# -> {"success": False, "error": "confirmation_required", "confirmation_required": True, ...}
-
-# Only after the USER approved this exact action (dialog, spoken "yes", ...):
-result = execute_command({"action": "delete_file", "path": "College/notes.txt"}, confirmed=True)
-```
-
-Approval is a separate argument (`confirmed=True`), **not** a field of the action. A `confirmed` field (or any key starting with `_`) inside the action dictionary is removed and ignored, so the NLP model cannot approve a dangerous action by itself. Never pass `confirmed=True` automatically or merely because a settings toggle disables confirmation dialogs.
-
-## Supported actions
-
-| Category | Actions |
-|---|---|
-| Applications | `open_application`, `close_application`, `list_running_applications` |
-| Files | `create_folder`, `create_file`, `read_file`, `copy_file`, `move_file`, `rename_file`, `delete_file`, `delete_folder`, `search_files`, `list_files` |
-| Browser | `open_website`, `google_search` |
-| System | `get_date_time`, `get_cpu_usage`, `get_disk_usage`, `get_memory_usage`, `get_processes`, `get_system_info`, `lock_screen`, `logout`, `restart_system`, `shutdown_system` |
-| Devices | `volume_up`, `volume_down`, `volume_mute`, `brightness_up`, `brightness_down`, `wifi_on`, `wifi_off` |
-
-Application names are allowlisted in `app_manager.py`. `browser` is an alias for Firefox. Add an application only by deliberately editing that allowlist.
-
-## Integration from the project root
-
-```python
+Application names are controlled by the allowlist in app_manager.py. Add applications only by deliberately updating that allowlist.
+Integration
 from executor.executor import execute_command
 
 result = execute_command({"action": "get_cpu_usage"})
-if result["success"]:
+
+if result.get("success"):
     print(result.get("data"))
 else:
-    print(result["error"], result["message"])
-```
+    print(result.get("error"), result.get("message"))
+The upstream command-understanding component should provide the action name and required fields as a dictionary. The GUI should communicate through its backend/controller layer.
 
-The future GUI/Main integration should pass structured dictionaries to `execute_command`. NLP should produce an action and its required fields; it should not produce a raw shell string.
-
-The separate project `security/security_gate.py` currently validates **shell-command text**, whereas this executor accepts **structured action dictionaries**. They are different interfaces: do not pass an action dictionary to `validate_command`, and do not send raw shell commands to this executor. Keep the text Security Gate upstream only if that part of the pipeline is intentionally processing shell-command text; the executor still enforces its own payload and workspace protections.
-
-## Run the optional command-line interface
-
+The separate security/ package has a different interface from the Executor. Do not pass an Executor action dictionary to a shell-text validator or pass raw shell text to the Executor. If both components are used in the final pipeline, implement and test an explicit integration adapter.
+CLI
 From the project root:
-
-```bash
 python3 -m executor.main
-```
-
-Enter one JSON object per line. Type `exit` to quit. To confirm a dangerous action, repeat the same line starting with `!`, for example `!{"action":"delete_file","path":"a.txt"}`.
-
-## Tests
-
+The CLI accepts one JSON object per line. Type exit to quit.
+Tests
 From the project root:
-
-```bash
 python3 -m unittest executor.test_executor -v
-```
-
-These tests cover payload validation, path traversal, symlink rejection, overwrite protection, file operations, confirmation handling, and action registration. They do not test every installed desktop utility or physical device.
+These tests do not replace testing on the target Ubuntu desktop. Some operations depend on installed utilities, desktop applications, hardware, and permissions.ysical device.
