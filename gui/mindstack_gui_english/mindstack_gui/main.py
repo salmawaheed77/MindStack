@@ -17,13 +17,8 @@ from app.theme import apply_theme, setup_fonts
 
 
 def create_backend():
-    """Return the backend the GUI talks to.
-
-    TODO (team integration): replace MockBackend with the real implementation
-    that wires Vosk / SpeechRecognition + command parser + subprocess + pyttsx3.
-    It only has to follow the BaseBackend contract in app/backend.py.
-    """
-    return MockBackend()
+    """Return the real MindStack backend."""
+    return RealBackend()
 
 
 def main() -> int:
