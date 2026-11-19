@@ -1,26 +1,26 @@
-# linux_ops Module
+Linux Operations — Implemented in the Executor
+Architecture note: MindStack does not contain or require a separate linux_ops/ package. All supported Linux and computer operations are implemented through the executor/ package.
 
-Linux operations for MindStack. The Executor calls these functions after the intent has been validated.
+Where the operations live
+See [`../executor/README.md`](../executor/README.md) for the detailed Executor documentation, supported action names, safety rules, integration contract, and test commands.
 
-## Safe workspace
-File operations only work inside `~/voice_workspace`. Any path outside it is rejected.
-The folder permissions are `700`, so only the owner can read or write in it.
-
-## Return format
-Every function returns the same dict:
-```python
-{"ok": True or False, "message": "text that can be spoken", "data": result or None}
-```
-
-## File operations (`linux_ops/file_ops.py`)
-| Function | Description |
-|---|---|
-| `list_files(folder="")` | List files and folders. `data` is a list of names. |
-| `create_file(name)` | Create an empty file. |
-| `create_folder(name)` | Create a folder. |
-| `rename_file(old_name, new_name)` | Rename a file or folder. |
-| `delete_file(name, confirmed=False)` | Delete a file. Needs `confirmed=True`, otherwise it returns "Confirmation required". |
-
+The Executor is responsible for:
+- File and folder operations
+- Application management
+- Browser operations
+- System information and process management
+- Session and system actions
+- Device controls such as volume, brightness, and Wi-Fi
+Workspace
+File operations use the workspace configured by the current Executor implementation:
+~/MindStack_Workspace
+Use paths relative to this workspace. Do not assume the old ~/voice_workspace location is still used.
+Testing
+Run the Executor tests from the project root:
+python3 -m unittest executor.test_executor -v
+The old test_linux_ops.py imports from linux_ops and should be updated to test the actual executor/ implementation instead. Do not create a placeholder linux_ops/ package just to make those old imports pass.
+Integration rule
+Other components should send structured action dictionaries to the Executor. They should not import modules from a nonexistent linux_ops/ package or execute arbitrary shell commands from recognized voice text.
 ## System information (`linux_ops/system_info.py`)
 | Function | Description |
 |---|---|
