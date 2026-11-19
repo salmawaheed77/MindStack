@@ -46,7 +46,7 @@ PROTECTED_PROCESSES = {
 
 
 def default_workspace() -> str:
-    return os.path.realpath(Path.home() / "SoundOS_Workspace")
+    return os.path.realpath(Path.home() / "MindStack_Workspace")
 
 
 def _read_protected():
