@@ -59,7 +59,7 @@ def load_understand() -> Callable[[str], dict]:
     raised so it is not hidden.
     """
     try:
-        from nlp.intent import understand  # type: ignore
+        from nlp.nlp import understand_command  # type: ignore
         return understand
     except ModuleNotFoundError as exc:
         if exc.name not in ("nlp", "nlp.intent"):
