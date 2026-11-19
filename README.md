@@ -47,5 +47,21 @@ python3 -m unittest executor.test_executor -v
 Other tests should be run only when their required modules and hardware dependencies are available. See the relevant test file before running it.
 Team workflow
 Read [`docs/GIT_WORKFLOW.md`](docs/GIT_WORKFLOW.md) before creating branches or submitting changes.
-## Speech-to-Text (stt)
-Requires ffmpeg. Download it, extract it, and place the folder at `stt/ffmpeg/` so that `stt/ffmpeg/bin/ffmpeg.exe` exists.
+## Speech-to-Text Requirements
+
+MindStack uses FFmpeg for audio processing.
+
+Install FFmpeg on Ubuntu:
+
+```bash
+sudo apt update
+sudo apt install ffmpeg
+```
+
+Verify installation:
+
+```bash
+ffmpeg -version
+```
+
+The STT module uses the installed FFmpeg executable.
