@@ -1,57 +1,75 @@
-# Setup Guide
+Setup Guide
+This guide prepares an Ubuntu/Linux environment for MindStack. The project can be tested in an Ubuntu virtual machine; a dual-boot installation is not required.
+1. Ubuntu environment
+Use Ubuntu 22.04 or newer.
 
-Follow these steps to prepare your machine for the MindStack project.
-
-## 1. Install Ubuntu
-Use Ubuntu 22.04 or newer. Recommended options:
-- A VirtualBox VM (2+ CPU cores, 4 GB+ RAM, 25 GB+ disk).
-- Or dual boot.
-
-## 2. VirtualBox only: Guest Additions
-```bash
+Suggested VirtualBox resources:
+- 2 or more CPU cores
+- 4 GB RAM or more
+- 25 GB disk or more
+Make sure the VM has working network and audio input/output if you plan to test voice features.
+2. Optional VirtualBox Guest Additions
+Install build dependencies:
 sudo apt update
 sudo apt install -y build-essential dkms linux-headers-$(uname -r)
-```
-Then in VirtualBox: Devices -> Insert Guest Additions CD image, open the CD folder in a terminal and run:
-```bash
+In VirtualBox, choose Devices → Insert Guest Additions CD Image, open the mounted CD directory in a terminal, and run the installer:
 sudo sh ./VBoxLinuxAdditions.run
-systemctl reboot -i
-```
-After reboot: Devices -> Shared Clipboard -> Bidirectional.
-
-## 3. Microphone and audio (VirtualBox)
+Restart Ubuntu after installation. Shared Clipboard can then be enabled from the VirtualBox Devices menu.
+3. Microphone and audio
+For a VirtualBox VM:
 1. Shut down the VM.
-2. VirtualBox -> Settings -> Audio: enable Audio Output and Audio Input.
-3. In Windows: Settings -> Privacy & security -> Microphone: allow desktop apps.
-4. Start the VM and test:
-```bash
+2. Open VirtualBox VM Settings → Audio.
+3. Enable audio input and output.
+4. In the host operating system, allow desktop applications to access the microphone.
+5. Start Ubuntu and install the audio utilities:
+sudo apt update
 sudo apt install -y alsa-utils
+List recording devices:
 arecord -l
-arecord -f S16_LE -r 16000 -c 1 -d 5 test.wav && aplay test.wav
-```
-You should hear your own voice.
-
-## 4. Get the project
-```bash
-git config --global user.name "Your Name"
-git config --global user.email "you@example.com"
+Record and play a short test:
+arecord -f S16_LE -r 16000 -c 1 -d 5 test.wav
+aplay test.wav
+Remove the temporary recording when finished:
+rm test.wav
+4. Get the project and install dependencies
 git clone https://github.com/salmawaheed77/MindStack.git
 cd MindStack
 git checkout develop
 bash setup.sh
 source venv/bin/activate
-```
-When pushing, GitHub asks for a username and a Personal Access Token (not your password).
-Create one at: GitHub -> Settings -> Developer settings -> Personal access tokens -> Tokens (classic) -> scope: repo.
+If you are setting up an existing local copy rather than cloning, open a terminal in the project root and run the setup script there.
+5. Optional Executor system utilities
+The Executor uses Ubuntu/Linux utilities for some system and device actions. Install the common packages:
+sudo apt update
+sudo apt install -y procps util-linux network-manager
+For brightness control, if needed:
+sudo apt install -y brightnessctl
+Volume control may use PipeWire (wpctl) or PulseAudio (pactl), depending on the Ubuntu installation.
+6. Run the project
+Activate the environment:
+source venv/bin/activate
+Run the project entry point:
+python3 main.py
+Run the Executor CLI separately:
+python3 -m executor.main
+Run Executor tests:
+python3 -m unittest executor.test_executor -v
+For GUI-specific instructions, read:
 
-## 5. Create your branch
-```bash
-git checkout -b feature/your-module
-```
-Examples: `feature/stt`, `feature/nlp`, `feature/security`, `feature/executor`, `feature/tts`, `feature/gui`, `feature/tests`.
-See `docs/GIT_WORKFLOW.md` for the full workflow.
-
-## Troubleshooting
+gui/mindstack_gui_english/mindstack_gui/README.md
+7. Git identity and branches
+Set your Git identity if it has not already been configured:
+git config --global user.name "Your Name"
+git config --global user.email "you@example.com"
+Create a feature branch before editing:
+git checkout -b feature/your-component
+See docs/GIT_WORKFLOW.md for the full team workflow.
+Troubleshooting
+- Linux paths and filenames are case-sensitive.
+- Paste into a Linux terminal with Ctrl+Shift+V in many desktop terminal applications.
+- If the microphone is not detected, check VirtualBox audio input settings and host microphone permissions.
+- If a device action fails, check whether the required system utility is installed and whether the current user has permission.
+- Run commands from the project root when using module commands such as python3 -m executor.main.
 - Linux is case sensitive: `VBox_GAs` is not `VBox_Gas`. Press Tab to auto-complete names.
 - Paste in the terminal with Ctrl+Shift+V.
 - If `sudo reboot` is refused, use `systemctl reboot -i`.
