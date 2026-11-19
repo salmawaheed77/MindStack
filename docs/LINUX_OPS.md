@@ -1,63 +1,80 @@
-Linux Operations — Implemented in the Executor
-Architecture note: MindStack does not contain or require a separate linux_ops/ package. All supported Linux and computer operations are implemented through the executor/ package.
+# Linux Operations — MindStack
 
-Where the operations live
-See [`../executor/README.md`](../executor/README.md) for the detailed Executor documentation, supported action names, safety rules, integration contract, and test commands.
+## Architecture
 
-The Executor is responsible for:
-- File and folder operations
-- Application management
-- Browser operations
-- System information and process management
-- Session and system actions
-- Device controls such as volume, brightness, and Wi-Fi
-Workspace
-File operations use the workspace configured by the current Executor implementation:
-~/MindStack_Workspace
-Use paths relative to this workspace. Do not assume the old ~/voice_workspace location is still used.
-Testing
-Run the Executor tests from the project root:
-python3 -m unittest executor.test_executor -v
-The old test_linux_ops.py imports from linux_ops and should be updated to test the actual executor/ implementation instead. Do not create a placeholder linux_ops/ package just to make those old imports pass.
-Integration rule
-Other components should send structured action dictionaries to the Executor. They should not import modules from a nonexistent linux_ops/ package or execute arbitrary shell commands from recognized voice text.
-## System information (`linux_ops/system_info.py`)
-| Function | Description |
-|---|---|
-| `show_processes(limit=10)` | Top running processes by memory. `data` is a list of `{pid, name, memory_percent}`. |
-| `show_usage()` | CPU, RAM and disk usage in `data`. |
+MindStack handles Linux and computer operations through the `executor/` package.
 
-## Applications (`linux_ops/app_ops.py`)
-| Function | Description |
-|---|---|
-| `open_app(name)` | Open an allowed application. |
-| `close_app(name)` | Close an allowed application. |
+There is no separate `linux_ops/` package.
 
-Allowed names: `browser`, `calculator`, `text editor`. Anything else is rejected.
-No command is ever run through a shell.
+## Supported Modules
 
-## Suggested intent mapping
-| Intent | Function |
-|---|---|
-| `LIST_FILES` | `list_files` |
-| `CREATE_FILE` | `create_file` |
-| `CREATE_FOLDER` | `create_folder` |
-| `RENAME_FILE` | `rename_file` |
-| `DELETE_FILE` | `delete_file` |
-| `OPEN_APPLICATION` | `open_app` |
-| `CLOSE_APPLICATION` | `close_app` |
-| `SHOW_PROCESSES` | `show_processes` |
-| `SHOW_USAGE` | `show_usage` |
+The Executor consists of:
 
-## Example
+- `app_manager.py`: Application management.
+- `browser_manager.py`: Browser and website operations.
+- `device_manager.py`: Volume, brightness, and Wi-Fi controls.
+- `file_manager.py`: File and folder operations.
+- `system_manager.py`: System information and system controls.
+- `security.py`: Payload validation and workspace protection.
+- `executor.py`: Main action dispatcher.
+
+## Workspace
+
+All file operations are restricted to:
+
+`~/MindStack_Workspace`
+
+Use relative paths whenever possible.
+
+## Integration
+
+Other project components must send structured action dictionaries to the Executor.
+
+Example:
+
 ```python
-from linux_ops import file_ops
+from executor.executor import execute_command
 
-result = file_ops.create_file("notes.txt")
-print(result["message"])   # File notes.txt created
+action = {
+    "action": "get_cpu_usage"
+}
+
+result = execute_command(action)
+print(result["message"])
 ```
 
-## Tests
+The Executor does not accept arbitrary shell commands.
+
+## Security
+
+The Executor validates structured actions before execution.
+
+Destructive operations require explicit confirmation.
+
+The separate `security/` package provides Linux shell-command validation through `security_gate.py`.
+
+It is not automatically invoked by the structured Executor.
+
+Do not bypass the Executor's validation when executing structured actions.
+
+## Testing
+
+Run Executor tests:
+
+```bash
+python3 -m unittest executor.test_executor -v
+```
+
+Run Linux operation tests:
+
 ```bash
 python3 -m unittest tests.test_linux_ops -v
 ```
+
+Run Security tests:
+
+```bash
+python3 -m unittest tests.test_security -v
+```
+
+Hardware-dependent operations must also be tested on the target Ubuntu machine.
