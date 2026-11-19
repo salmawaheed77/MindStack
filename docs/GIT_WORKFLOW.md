@@ -1,21 +1,37 @@
-# Git Workflow
-
-## Branches
-- `main`: final submission only.
-- `develop`: the default branch where everything is merged.
-- Each member works on their own branch: `feature/stt`, `feature/nlp`, `feature/security`, `feature/executor`, `feature/tts`, `feature/linux-ops`, `feature/gui`.
-
-## Steps
-1. Get the latest changes: `git checkout develop` then `git pull`
-2. Create your branch: `git checkout -b feature/your-module`
-3. Work only inside your own folder. Edit other folders only after agreeing with their owner.
-4. Save your work: `git add .` then `git commit -m "Clear message"`
-5. Push your branch: `git push -u origin feature/your-module`
-6. Open a **Pull Request** from your branch into `develop`, and ask a teammate to review it before merging.
-
-## Rules
-- Never push directly to `develop` or `main`.
-- Never commit the `venv` folder or temporary audio files.
-- Write clear commit messages in English.
-- Add any new library to `requirements.txt`.
-- Agree on the shape of the intent passed between modules before coding.
+Git Workflow
+Branches
+- main: final submission only.
+- develop: shared integration branch.
+- Each team member should work on a feature branch related to their assigned component.
+Suggested branch names:
+- feature/stt
+- feature/security
+- feature/executor
+- feature/tts
+- feature/gui
+- feature/tests
+- docs/update
+There is no separate linux-ops branch or linux_ops/ component: Linux and computer operations are implemented in executor/.
+Steps
+1. Get the latest changes:
+   git checkout develop
+   git pull
+2. Create a branch:
+   git checkout -b feature/your-component
+3. Work primarily in the files belonging to your assigned component. Coordinate before changing shared interfaces or another component's files.
+4. Review your changes:
+   git status
+   git diff
+5. Commit:
+   git add .
+   git commit -m "Describe the change"
+6. Push your branch:
+   git push -u origin feature/your-component
+7. Open a Pull Request into develop and request a teammate review.
+Rules
+- Do not push directly to develop or main.
+- Do not commit the venv/ directory, temporary audio files, caches, or local secrets.
+- Use clear commit messages.
+- Add required Python packages to the appropriate requirements.txt.
+- Coordinate changes to interfaces between the GUI, STT/TTS, security components, and Executor.
+- The Executor's public interface uses structured action dictionaries. Do not replace this with arbitrary shell-command strings without an agreed design change.
