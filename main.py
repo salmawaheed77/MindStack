@@ -263,25 +263,20 @@ def interactive_loop(pipeline: Pipeline, listen: Optional[Callable[[], str]], on
             return 0
 
 
-def run_gui() -> int:
-    """Start the PySide6 GUI wired to the real backend (falls back to the mock)."""
+def run_gui():
+    """Start the PySide6 GUI with the real backend."""
+
     if not (GUI_DIR / "main.py").is_file():
         sys.exit(f"GUI not found at {GUI_DIR}")
+
     sys.path.insert(0, str(GUI_DIR))
 
-    spec = importlib.util.spec_from_file_location("mindstack_gui_main", GUI_DIR / "main.py")
-    gui = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(gui)
-
     try:
-        from app.real_backend import RealBackend
-        gui.create_backend = lambda: RealBackend()
-    except ModuleNotFoundError as exc:
-        if exc.name not in ("app.real_backend", "app"):
-            raise
-        log.warning("gui/.../app/real_backend.py is missing (still zipped?). "
-                    "Starting with MockBackend.")
-    return gui.main()
+        from app import main as gui_main
+    except ImportError as exc:
+        sys.exit(f"Cannot load GUI: {exc}")
+
+    return gui_main.main()
 
 
 # --------------------------------------------------------------------------- #
