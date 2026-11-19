@@ -1,37 +1,21 @@
-MindStack — Sound Operating System
-MindStack is a voice-controlled system for Ubuntu/Linux. It receives a user's spoken request, converts it into a structured action, validates that action, executes supported operations through the Executor, and can return the result through Text-to-Speech.
+Text-to-Speech (TTS) Module
+The TTS module converts response text into spoken audio.
+Install on Ubuntu
+sudo apt update
+sudo apt install espeak-ng libespeak-ng1
+pip install pyttsx3
+Install the Python dependencies from the project's requirements file as appropriate for the environment.
+Usage
+From the project root:
+from tts.tts import speak
 
-The project uses the existing Linux operating system. It does not replace or modify the Linux kernel.
-Architecture
-User
-  ↓
-Microphone
-  ↓
-Speech-to-Text (STT)
-  ↓
-Command understanding
-  ↓
-Structured action
-  ↓
-Executor (validation + operation handling)
-  ↓
-Execution result
-  ↓
-Text-to-Speech (TTS)
-  ↓
-User
+speak("Hello, this is MindStack.")
+Integration
+The component that receives the Executor result can pass a user-friendly response message to speak(...).
 
-GUI ↔ Backend / Controller ↔ Project components
-Important design decision: All supported computer and Linux operations are handled inside executor/. There is no separate linux_ops/ module in this project.
-Main project folders
-Path	Responsibility
-stt/	Speech-to-Text input
-tts/	Text-to-Speech responses
-executor/	Validates structured actions and performs file, application, browser, system, and device operations
-security/	Separate security-related command validation components; coordinate their use with the Executor interface
-gui/	PySide6 graphical interface
-tests/	Automated tests
-docs/	Setup, architecture, and team workflow documentation
+Do not pass internal tracebacks or sensitive system details directly to speech output. Handle errors and empty messages before calling TTS.
+Testing
+Test audio output on the target Ubuntu machine. In a virtual machine, confirm that audio output is enabled in the VM settings and that Ubuntu can play audio.
 main.py	Project-level entry point
 
 
